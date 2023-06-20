@@ -3,6 +3,8 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
+use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -13,7 +15,7 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $gamesPlayedThreshold = 10;
+    public const GAMESPLAYEDTHREASHOLD = 10;
 
     /**
      * The attributes that are mass assignable.
@@ -30,8 +32,6 @@ class User extends Authenticatable
 
     /**
      * Boot the model.
-     *
-     * @return void
      */
     protected static function boot(): void
     {
@@ -40,13 +40,25 @@ class User extends Authenticatable
         static::creating(function ($user) {
             // Get the user with the highest rank
             $userWithHighestRank = self::orderByDesc('rank')->first();
-    
+
             // Determine the new rank for the user being created
             $newRank = $userWithHighestRank ? $userWithHighestRank->rank + 1 : 1;
-    
+
             // Set the new rank for the user being created
             $user->rank = $newRank;
         });
+    }
+
+    /**
+     * Scope a query to only include users of a given type.
+     *
+     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param mixed $type
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeExcludeUnranked($query)
+    {
+        return $query->where('games_played', '>', static::GAMESPLAYEDTHREASHOLD);
     }
 
     public function addElo(int $addElo): void
@@ -66,16 +78,13 @@ class User extends Authenticatable
 
         $this->save();
 
-        if ($this->hasRank)
+        if ($this->hasRank) {
             $this->adjustRanks($oldElo, $newElo);
+        }
     }
 
     /**
      * Adjust ranks based on Elo score.
-     *
-     * @param int $oldElo
-     * @param int $newElo
-     * @return void
      */
     private function adjustRanks(int $oldElo, int $newElo): void
     {
@@ -109,18 +118,16 @@ class User extends Authenticatable
 
     /**
      * Determine if the user has achieved a rank.
-     *
-     * @return bool
      */
     public function getHasRankAttribute(): bool
     {
-        return $this->games_played > $this->gamesPlayedThreshold;
+        return $this->games_played > $this::GAMESPLAYEDTHREASHOLD;
     }
 
     /**
      * Search for users based on a given search term.
      *
-     * @param string|null $search The search term.
+     * @param  string|null  $search The search term.
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public static function search(?string $search)
@@ -128,7 +135,7 @@ class User extends Authenticatable
         return empty($search) ? static::query()
             : static::query()->whereLike(['nickname'], $search);
     }
-    
+
     /**
      * The games that belong to the user.
      */

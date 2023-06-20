@@ -21,6 +21,7 @@ class Leaderboard extends Component
     {
         return view('livewire.leaderboard', [
             'users' => User::search($this->search)
+                ->excludeUnranked()
                 ->orderBy('rank', 'asc')
                 ->select('elo', 'rank', 'nickname', 'games_played')
                 ->paginate(10),
