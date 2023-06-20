@@ -46,6 +46,17 @@ class User extends Authenticatable
 
             // Set the new rank for the user being created
             $user->rank = $newRank;
+
+            // Check if generated user to put them correctly on the ranks
+            if ($user->hasRank) {
+                $curElo = (int)$user->elo;
+                $user->elo = 1500;
+                if ($curElo > 1500) {
+                    $user->addElo($curElo - 1500, true);
+                } elseif ($curElo <= 1500) {
+                    $user->removeElo(1500 - $curElo, true);
+                }
+            }
         });
     }
 
@@ -61,26 +72,57 @@ class User extends Authenticatable
         return $query->where('games_played', '>', static::GAMESPLAYEDTHREASHOLD);
     }
 
-    public function addElo(int $addElo): void
+    public function addElo(int $addElo, bool $newUser = false): void
     {
-        $this->changeElo($addElo);
+        $this->changeElo($addElo, $newUser);
     }
 
-    public function removeElo(int $removeElo): void
+    public function removeElo(int $removeElo, bool $newUser = false): void
     {
-        $this->changeElo(-$removeElo);
+        $this->changeElo(-$removeElo, $newUser);
     }
 
-    private function changeElo(int $newElo): void
+    private function changeElo(int $newElo, bool $newUser): void
     {
         $oldElo = $this->elo;
         $this->elo = $oldElo + $newElo;
 
-        $this->save();
+        if ($newUser) {
+            $this->newUserRank();
+        } else {
+            $this->save();
 
-        if ($this->hasRank) {
-            $this->adjustRanks($oldElo, $newElo);
+            if ($this->hasRank) {
+                $this->adjustRanks($oldElo, $this->elo);
+            }
         }
+    }
+
+    private function newUserRank(): void
+    {
+        // Retrieve the current user's Elo score
+        $userElo = $this->elo;
+
+        // Find the Elo score of the user with the lowest rank among those who just finished their games
+        $lowestRankUserElo = self::excludeUnranked()->min('elo');
+
+        if(!$lowestRankUserElo) {
+            $this->rank = 1;
+            return;
+        } elseif ($lowestRankUserElo > $userElo) {
+            $this->rank = self::excludeUnranked()->max('rank') + 1;
+            return;
+        }
+
+        // Find all users with Elo scores below the user elo and increment their ranks
+        self::excludeUnranked()
+            ->where('elo', '<=', $userElo)
+            ->increment('rank');
+
+        // Set the current user's rank to the rank of the player with the lowest rank among those who just got pushed down
+        $this->rank = self::excludeUnranked()
+            ->where('elo', '<=', $userElo)
+            ->min('rank') - 1;
     }
 
     /**
@@ -93,24 +135,27 @@ class User extends Authenticatable
         $endElo = max($oldElo, $newElo);
 
         // Get all users within the desired rank range
-        $usersToUpdate = self::whereBetween('elo', [$startElo, $endElo])->get();
+        $usersToUpdate = self::whereBetween('elo', [$startElo, $endElo])
+            ->excludeUnranked()
+            ->whereNot('id', $this->id)
+            ->get();
+
+        dump($oldElo, $newElo, $startElo, $endElo, $usersToUpdate->pluck('nickname'));
 
         // Extract the user IDs to be updated
         $userIdsToUpdate = $usersToUpdate->pluck('id')->toArray();
 
         // Increment or decrement the ranks of users within the desired rank range
-        if ($newElo > $oldElo) {
-            self::whereIn('id', $userIdsToUpdate)->update(['rank' => DB::raw('rank + 1')]);
-
+        if (!$userIdsToUpdate) {
+            dump('No rank change!');
+        } elseif ($newElo > $oldElo) {
             // Set the current user's rank to the highest rank among those who just got pushed down
-            $highestRank = $usersToUpdate->min('rank');
-            $this->rank = $highestRank;
+            self::whereIn('id', $userIdsToUpdate)->increment('rank');
+            $this->rank = $this->rank - count($userIdsToUpdate);
         } elseif ($newElo < $oldElo) {
-            self::whereIn('id', $userIdsToUpdate)->update(['rank' => DB::raw('rank - 1')]);
-
             // Set the current user's rank to the lowest rank among those who just got pushed up
-            $lowestRank = $usersToUpdate->max('rank');
-            $this->rank = $lowestRank;
+            self::whereIn('id', $userIdsToUpdate)->decrement('rank');
+            $this->rank = $this->rank + count($userIdsToUpdate);
         }
 
         $this->save();
