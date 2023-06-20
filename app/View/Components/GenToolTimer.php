@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
 class GenToolTimer extends Component
 {
     public $expires;
+    public $hasError = false;
 
     public function __construct()
     {
@@ -26,10 +27,12 @@ class GenToolTimer extends Component
         });
 
         $event = $matches->first();
-        if ($event)
+        if ($event){
             $this->expires = $matches->first()->nextRunDate();
-        else
+        } else {
             $this->expires = now();
+            $this->hasError = true;
+        }
     }
 
     public function days(): string
