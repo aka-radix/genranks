@@ -116,6 +116,18 @@ class User extends Authenticatable
     {
         return $this->games_played > $this->gamesPlayedThreshold;
     }
+
+    /**
+     * Search for users based on a given search term.
+     *
+     * @param string|null $search The search term.
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public static function search(?string $search)
+    {
+        return empty($search) ? static::query()
+            : static::query()->whereLike(['nickname'], $search);
+    }
     
     /**
      * The games that belong to the user.
