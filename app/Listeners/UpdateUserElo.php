@@ -25,6 +25,10 @@ class UpdateUserElo
         // Update the user's ELO score
         // Perform the necessary logic to update the ELO based on the completed game
         // ...
+        //foreach ($users as $user) {
+        //    $user->addElo(10);
+        //    $user->removeElo(10);
+        //}
 
         // Save the updated ELO score
     }

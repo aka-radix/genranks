@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -48,27 +49,60 @@ class User extends Authenticatable
         });
     }
 
+    public function addElo(int $addElo): void
+    {
+        $this->changeElo($addElo);
+    }
+
+    public function removeElo(int $removeElo): void
+    {
+        $this->changeElo(-$removeElo);
+    }
+
+    private function changeElo(int $newElo): void
+    {
+        $oldElo = $this->elo;
+        $this->elo = $oldElo + $newElo;
+
+        $this->save();
+
+        $this->adjustRanks($oldElo, $newElo);
+    }
+
     /**
      * Adjust ranks based on Elo score.
      *
+     * @param int $oldElo
+     * @param int $newElo
      * @return void
      */
-    public function adjustRanks(): void
+    private function adjustRanks(int $oldElo, int $newElo): void
     {
-        // Retrieve the current user's Elo score
-        $userElo = $this->elo;
+        // Determine the ELO range for updates
+        $startElo = min($oldElo, $newElo);
+        $endElo = max($oldElo, $newElo);
 
-        // Find the Elo score of the user with the lowest rank among those who just finished their games
-        $lowestRankUserElo = self::where('games_played', '>=', $this->gamesPlayedThreshold)
-            ->where('elo', '>', $userElo)
-            ->min('elo');
+        // Get all users within the desired rank range
+        $usersToUpdate = self::whereBetween('elo', [$startElo, $endElo])->get();
 
-        // Find all users with Elo scores below the lowestRankUserElo and increment their ranks
-        self::where('elo', '<', $lowestRankUserElo)
-            ->increment('rank');
+        // Extract the user IDs to be updated
+        $userIdsToUpdate = $usersToUpdate->pluck('id')->toArray();
 
-        // Set the current user's rank to the rank of the player with the lowest rank among those who just got pushed down
-        $this->ranks = self::where('elo', $lowestRankUserElo)->min('rank');
+        // Increment or decrement the ranks of users within the desired rank range
+        if ($newElo > $oldElo) {
+            self::whereIn('id', $userIdsToUpdate)->update(['rank' => DB::raw('rank + 1')]);
+
+            // Set the current user's rank to the highest rank among those who just got pushed down
+            $highestRank = $usersToUpdate->min('rank');
+            $this->rank = $highestRank;
+        } elseif ($newElo < $oldElo) {
+            self::whereIn('id', $userIdsToUpdate)->update(['rank' => DB::raw('rank - 1')]);
+
+            // Set the current user's rank to the lowest rank among those who just got pushed up
+            $lowestRank = $usersToUpdate->max('rank');
+            $this->rank = $lowestRank;
+        }
+
         $this->save();
     }
 

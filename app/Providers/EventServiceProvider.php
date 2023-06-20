@@ -22,7 +22,6 @@ class EventServiceProvider extends ServiceProvider
         GameCompleted::class => [
             AddGameCountToUser::class,
             UpdateUserElo::class,
-            AdjustRanksAfterGameCompletion::class,
         ],
     ];
 
