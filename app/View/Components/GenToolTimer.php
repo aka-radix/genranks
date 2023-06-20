@@ -5,7 +5,6 @@ namespace App\View\Components;
 use App\Console\Kernel;
 use Closure;
 use DateInterval;
-use DateTimeInterface;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Contracts\View\View;
 use Illuminate\View\Component;
