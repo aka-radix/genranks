@@ -14,7 +14,7 @@
 
             if (timeDistance < 0) {
                 clearInterval(runningCounter);
-                this.show = false
+                this.timer.show = false
                 return;
             }
 
