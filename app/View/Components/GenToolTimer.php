@@ -25,8 +25,12 @@ class GenToolTimer extends Component
         $matches = $tasks->filter(function ($item) {
             return Str::contains($item->command, 'gentool:fetch');
         });
-        
-        $this->expires = $matches->first()->nextRunDate();
+
+        $event = $matches->first();
+        if ($event)
+            $this->expires = $matches->first()->nextRunDate();
+        else
+            $this->expires = now();
     }
 
     public function days(): string
