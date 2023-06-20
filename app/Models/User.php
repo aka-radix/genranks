@@ -66,7 +66,7 @@ class User extends Authenticatable
 
         $this->save();
 
-        if ($this->games_played >= Self::$gamesPlayedThreshold)
+        if ($this->hasRank)
             $this->adjustRanks($oldElo, $newElo);
     }
 
