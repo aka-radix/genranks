@@ -10,10 +10,18 @@ class Leaderboard extends Component
 {
     use WithPagination;
 
+    public $search = '';
+
+    public function updatingSearch()
+    {
+        $this->resetPage();
+    }
+
     public function render()
     {
         return view('livewire.leaderboard', [
-            'leaderboard' => User::orderBy('rank', 'asc')
+            'users' => User::search($this->search)
+                ->orderBy('rank', 'asc')
                 ->select('elo', 'rank', 'nickname', 'games_played')
                 ->paginate(10),
         ]);
