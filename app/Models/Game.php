@@ -53,23 +53,14 @@ class Game extends Model
         // and handle the deciding which player won and which lost.
 
         // If there is no winner, do nothing
-        if (!$this->getHasWinnerAttribute()) {
+        if (!$this->hasWinner) {
             return;
         }
 
-        $winner = $this->winner();
         $users = $this->users();
 
-        $userA = null;
-        $userB = null;
-
-        foreach ($users as $user) {
-            if ($userA === null) {
-                $userA = $user;
-            } else {
-                $userB = $user;
-            }
-        }
+        $userA = $users->first();
+        $userB = $users->last();
 
         // Get each user's ELO rating
         $userAElo = $userA->elo;
@@ -80,7 +71,7 @@ class Game extends Model
         $winProbabilityForA = $this::getProbability($userBElo, $userAElo);
 
         // Calculate the final ELO rating
-        if ($winner == $userA) {
+        if ($this->winner() == $userA) {
             $userA->addElo($this::ELO_FACTOR * (1 - $winProbabilityForA));
             $userB->removeElo($this::ELO_FACTOR * (0 - $winProbabilityForB));
         } else {
