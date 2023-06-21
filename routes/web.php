@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -17,8 +18,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::get('/profile/{user:nickname}', [ProfileController::class, 'show'])->name('profile.show');
+
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+    Route::get('/me', [ProfileController::class, 'me'])->name('profile.me');
 });
