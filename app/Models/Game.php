@@ -9,6 +9,10 @@ class Game extends Model
 {
     use HasFactory;
 
+    protected $fillable = [
+        'map',
+    ];
+
     public function users()
     {
         return $this->belongsToMany(User::class)
