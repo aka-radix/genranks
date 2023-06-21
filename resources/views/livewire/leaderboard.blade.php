@@ -40,7 +40,9 @@
                             {{ $user->rank }}
                         </td>
                         <td class="px-6 py-4">
-                            {{ $user->nickname }}
+                            <a href="{{ $user->route() }}">
+                                {{ $user->nickname }}
+                            </a>
                         </td>
                         <td class="px-6 py-4">
                             {{ $user->elo }}
