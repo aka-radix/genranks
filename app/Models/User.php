@@ -161,6 +161,11 @@ class User extends Authenticatable
         $this->save();
     }
 
+    public function route()
+    {
+        return route('profile.show', ['user' => $this]);
+    }
+
     /**
      * Determine if the user has achieved a rank.
      */
