@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\DB;
@@ -195,6 +196,11 @@ class User extends Authenticatable
             ->using(GameUser::class)
             ->withPivot(GameUser::FIELDS)
             ->withTimestamps();
+    }
+
+    public function gamesWon(): HasMany
+    {
+        return $this->hasMany(Game::class, 'winner_id', 'id');
     }
 
     /**

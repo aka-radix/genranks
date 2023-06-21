@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Game extends Model
 {
@@ -11,6 +12,7 @@ class Game extends Model
 
     protected $fillable = [
         'map',
+        'winner_id',
     ];
 
     public function users()
@@ -19,5 +21,15 @@ class Game extends Model
             ->using(GameUser::class)
             ->withPivot(GameUser::FIELDS)
             ->withTimestamps();
+    }
+
+    public function winner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'winner_id', 'id');
+    }
+
+    public function getHasWinnerAttribute(): bool
+    {
+        return $this->winner_id ? true : false;
     }
 }

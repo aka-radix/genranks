@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('games', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('winner_id')->nullable();
             $table->string('map');
             $table->timestamps();
         });
