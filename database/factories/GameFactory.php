@@ -19,6 +19,7 @@ class GameFactory extends Factory
         return [
             'map' => fake()->name(),
             'file' => fake()->text(50),
+            'player_count' => fake()->numberBetween(2, 8),
         ];
     }
 }

@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('winner_id')->nullable();
             $table->boolean('verified')->default(false);
             $table->string('file');
+            $table->integer('player_count')->unsigned();
             $table->string('map');
             $table->timestamps();
         });
