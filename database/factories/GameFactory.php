@@ -18,6 +18,7 @@ class GameFactory extends Factory
     {
         return [
             'map' => fake()->name(),
+            'file' => fake()->text(50),
         ];
     }
 }
