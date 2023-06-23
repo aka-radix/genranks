@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('games', function (Blueprint $table) {
             $table->id();
             $table->foreignId('winner_id')->nullable();
+            $table->boolean('verified')->default(false);
             $table->string('map');
             $table->timestamps();
         });
