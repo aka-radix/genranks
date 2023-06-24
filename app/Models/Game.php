@@ -13,9 +13,9 @@ class Game extends Model
     private const ELO_FACTOR = 10;
 
     protected $fillable = [
-        'map',
         'winner_id',
         'hash',
+        'player_count',
     ];
 
     public function users()
