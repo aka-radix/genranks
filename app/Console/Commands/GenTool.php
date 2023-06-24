@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\GameCompleted;
 use App\Models\Game;
 use App\Models\User;
 use Illuminate\Console\Command;
@@ -35,60 +36,33 @@ class GenTool extends Command
         $this->info('Fetching data from GenTool!');
 
         $fullURL = $this->combineURL();
-
         $users = $this->getUserURLS($fullURL);
 
         // All .txt files are game info files
         // The file names are time, then mode, then players, example: 12-31-07_1v1_owl_Pin.txt
         // Seconds can be a bit off...
         foreach ($users as $nickname => $url) {
+            $this->info('Fetching from user: ' . $nickname);
 
             // Check if user exists and create them
             $user = $this->createUserIfNotExists($nickname);
 
             $games = $this->getGameLinks($url);
-            dump($nickname);
-            dump($url);
 
+            // Add all games found for user
             foreach ($games as $gameName => $gameUrl) {
-                dump($gameName);
-                dump($gameUrl);
-                $gameHash = $this->generateGameHash($gameName, $gameUrl);
+                // Check the hash don't exist, and create the game
+                $game = $this->createGameIfNotExists($gameName, $gameUrl, $fullURL);
+                // If the game already have users equial to the game mode, then do nothing
+                // If the game exists, add the user to it
+
+                // This means the game is ended and should not do anything with it.
+                $this->attachUserToGame($user, $game);
+                $this->info('Game added: ' . $gameName);
             }
-            dd('Looped over all the users games now!');
         }
 
-        // Check the hash don't exist, and create the game
-        //$gameFound = Game::whereNot('hash', $gameHash)->first();
-
-        if ($gameFound != null) {
-            // If the game already have users equial to the game mode, then do nothing
-            // If the game exists, add the user to it
-        }
-
-        // When adding the game to a user also add the file name to the game
-        // so we can see we don't have to fetch that .txt file next fetch in the same day!
-
-        // If the game has the same amount of players as the mode after adding the last player
-        // Then we find the winner with the replays
-    }
-
-    private function generateGameHash($name, $gameUrl): string
-    {
-        $txt = $gameUrl . '.txt';
-        $replay = $gameUrl . '.rep';
-        // Make a unique hash for the game involving the .txt file name, without the time, and the date/day
-        // and the following info:
-        // Map Name:         maps/[rank] td nobugscars zh v1
-        // Start Cash:       10000
-        // Match Type:       1v1
-        // Match Length:     00:08:09
-        // Match Mode:       LAN
-
-        // No Team
-        //     1AB72000 owl (Random)
-        //     1AFE3000 Pin (Random)
-        return 'test';
+        $this->info('Data fetching done!');
     }
 
     /**
@@ -175,7 +149,6 @@ class GenTool extends Command
      */
     function createUserIfNotExists(string $nickname): User
     {
-        dump($nickname);
         $user = User::where('nickname', $nickname)->first();
 
         if (!$user) {
@@ -188,6 +161,70 @@ class GenTool extends Command
         }
 
         return $user;
+    }
+
+    private function attachUserToGame(User $user, Game $game)
+    {
+        // If the game already have all players linked
+        if ($game->verified) {
+            return false;
+        }
+
+        // Check if the game has the user
+        if (!$game->users->contains($user)) {
+            // Attach the user to the game if they are not already attached
+            $game->users()->attach($user);
+        }
+        
+        // Check the number of users attached to the game
+        // Compare the attached user count with the player count
+        if ($game->users()->count() >= $game->player_count) {
+            // The required number of players is reached
+            // TODO: Actually find the real winner!
+
+            // Randomly select a winner from the connected users
+            $winner = $game->users()->inRandomOrder()->first();
+            $game->update([
+                'winner_id' => $winner->id,
+                'verified' => true,
+            ]);
+            event(new GameCompleted($game));
+        }
+    }
+
+    /**
+     * Check if a game exists based on the hash and create one if it doesn't.
+     *
+     * @param string $hash The hash of the game.
+     * @return Game The existing or newly created game.
+     */
+    private function createGameIfNotExists($name, $gameURL, $todaysURL): Game
+    {
+        // Get data from links and names
+        $nameSplit = explode('_', $name);
+
+        $timeStarted = $nameSplit[0];
+        $mode = $nameSplit[1];
+        $players = collect(array_slice($nameSplit, 2));
+        $txt = $gameURL . '.txt';
+        $replay = $gameURL . '.rep';
+
+        // Make game hash
+        $data = $timeStarted . $mode . $players->implode('_') . $txt . $replay . $todaysURL;
+        $hash = md5($data);
+
+        // Create or fetch game
+        $game = Game::where('hash', $hash)->first();
+        if ($game === null) {
+            // Game does not exist, create a new one
+            $game = Game::create([
+                'hash' => $hash,
+                'player_count' => $players->count(),
+                'mode' => $mode,
+            ]);
+        }
+
+        return $game;
     }
     
 }
