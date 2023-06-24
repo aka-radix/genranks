@@ -17,8 +17,7 @@ class GameFactory extends Factory
     public function definition(): array
     {
         return [
-            'map' => fake()->name(),
-            'file' => fake()->text(50),
+            'hash' => fake()->unique()->md5,
             'player_count' => fake()->numberBetween(2, 8),
         ];
     }
