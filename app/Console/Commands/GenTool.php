@@ -181,7 +181,6 @@ class GenTool extends Command
         if (!$user) {
             // User does not exist, create them
             $user = User::create([
-                'name' => fake()->name(),
                 'nickname' => $nickname,
                 'email' => fake()->unique()->safeEmail(),
                 'password' => Hash::make(Str::random(25, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#%!-_?+')),
