@@ -19,6 +19,7 @@ class GameFactory extends Factory
         return [
             'hash' => fake()->unique()->md5,
             'player_count' => fake()->numberBetween(2, 8),
+            'mode' => '1v1',
         ];
     }
 }

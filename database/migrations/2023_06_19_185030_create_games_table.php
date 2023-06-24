@@ -17,6 +17,7 @@ return new class extends Migration
             $table->boolean('verified')->default(false);
             $table->integer('player_count')->unsigned();
             $table->string('hash')->unique();
+            $table->string('mode');
             $table->timestamps();
         });
     }

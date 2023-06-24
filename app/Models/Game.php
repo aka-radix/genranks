@@ -16,6 +16,7 @@ class Game extends Model
         'winner_id',
         'hash',
         'player_count',
+        'mode',
     ];
 
     public function users()
