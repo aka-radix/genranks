@@ -59,7 +59,7 @@ class Game extends Model
             return;
         }
 
-        $users = $this->users();
+        $users = $this->users()->get();
 
         $userA = $users->first();
         $userB = $users->last();
