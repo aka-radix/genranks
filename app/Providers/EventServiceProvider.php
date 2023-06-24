@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\GameCompleted;
 use App\Listeners\AddGameCountToUser;
+use App\Listeners\UpdateUserElo;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
