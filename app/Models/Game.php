@@ -15,6 +15,7 @@ class Game extends Model
     protected $fillable = [
         'map',
         'winner_id',
+        'hash',
     ];
 
     public function users()
